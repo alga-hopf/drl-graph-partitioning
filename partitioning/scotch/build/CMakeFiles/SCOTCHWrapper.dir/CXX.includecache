@@ -1,0 +1,20 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/alice/local/scotch_6.1.0/include/scotch.h
+
+/home/alice/scotch/SCOTCHWrapper.cpp
+iostream
+-
+vector
+-
+cassert
+-
+scotch.h
+-
+
