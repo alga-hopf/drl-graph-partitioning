@@ -505,7 +505,7 @@ if __name__ == "__main__":
         type=int)
     parser.add_argument(
         "--nmax",
-        default=5000,
+        default=10000,
         help="Maximum graph size",
         type=int)
     parser.add_argument(
