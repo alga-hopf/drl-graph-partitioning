@@ -113,16 +113,16 @@ def torch_from_sparse(adj_sparse):
 def suitesparse_dataset_with_coarser(n, n_min, n_max):
     dataset, picked = [], []
     for graph in os.listdir(os.path.expanduser(
-            'drl-graph-partitioning/partitioning/suitesparse_train/')):
+            'drl-graph-partitioning/suitesparse_train/')):
 
         if len(dataset) > n or len(picked) >= len(os.listdir(os.path.expanduser(
-                'drl-graph-partitioning/partitioning/suitesparse_train/'))):
+                'drl-graph-partitioning/suitesparse_train/'))):
             break
         picked.append(str(graph))
         # print(str(graph))
         matrix_sparse = mmread(
             os.path.expanduser(
-                'drl-graph-partitioning/partitioning/suitesparse_train/' +
+                'drl-graph-partitioning/suitesparse_train/' +
                 str(graph)))
         gnx = nx.from_scipy_sparse_matrix(matrix_sparse)
         if nx.number_connected_components(gnx) == 1 and gnx.number_of_nodes(
