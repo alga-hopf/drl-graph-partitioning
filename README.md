@@ -1,4 +1,4 @@
-# Graph Partitioning and Sparse Matrix Ordering usingReinforcement Learning and Graph Neural Networks
+# Graph Partitioning and Sparse Matrix Ordering using Reinforcement Learning and Graph Neural Networks
 
 Deep reinforcement learning models to find a minimum normalized cut partitioning and a minimal vertex separator from https://arxiv.org/abs/2104.03546.
 
