@@ -652,21 +652,21 @@ if __name__ == "__main__":
             if len(list_picked) >= len(
                 os.listdir(
                     os.path.expanduser(
-                        'drl-graph-partitioning/partitioning/' +
+                        'drl-graph-partitioning/' +
                         str(dataset_type) +
                         '/'))):
                 break
             graph = random.choice(
                 os.listdir(
                     os.path.expanduser(
-                        'drl-graph-partitioning/partitioning/' +
+                        'drl-graph-partitioning/' +
                         str(dataset_type) +
                         '/')))
             if str(graph) not in list_picked:
                 list_picked.append(str(graph))
                 matrix_sparse = mmread(
                     os.path.expanduser(
-                        'drl-graph-partitioning/partitioning/' +
+                        'drl-graph-partitioning/' +
                         str(dataset_type) +
                         '/' +
                         str(graph)))
