@@ -266,7 +266,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--print_rew",
         default=1000,
-        help="Steps at which print reward",
+        help="Steps to take before printing the reward",
         type=int)
     parser.add_argument("--batch", default=8, help="Batch size", type=int)
     parser.add_argument(
