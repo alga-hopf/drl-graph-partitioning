@@ -1,1 +1,0 @@
-/usr/bin/c++ -fPIC   -shared -Wl,-soname,libSCOTCHWrapper.so -o libSCOTCHWrapper.so CMakeFiles/SCOTCHWrapper.dir/SCOTCHWrapper.cpp.o  /home/alice/local/scotch_6.1.0/lib/libscotch.a /home/alice/local/scotch_6.1.0/lib/libscotcherr.a /home/alice/local/scotch_6.1.0/lib/libscotcherrexit.a 

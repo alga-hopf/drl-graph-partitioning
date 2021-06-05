@@ -1,3 +1,0 @@
-/home/alice/scotch/build/CMakeFiles/rebuild_cache.dir
-/home/alice/scotch/build/CMakeFiles/edit_cache.dir
-/home/alice/scotch/build/CMakeFiles/SCOTCHWrapper.dir
