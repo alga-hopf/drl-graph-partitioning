@@ -1,1 +1,0 @@
-/usr/bin/c++ -fPIC   -shared -Wl,-soname,libAMDWrapper.so -o libAMDWrapper.so CMakeFiles/AMDWrapper.dir/amdbar.F.o CMakeFiles/AMDWrapper.dir/AMDReordering.cpp.o  -lgfortran -lquadmath 
