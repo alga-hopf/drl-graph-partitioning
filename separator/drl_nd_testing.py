@@ -23,7 +23,6 @@ from scipy.spatial import Delaunay
 from scipy.sparse.linalg import splu
 
 import copy
-import timeit
 import os
 from itertools import combinations
 
@@ -31,7 +30,7 @@ import ctypes
 libamd = ctypes.cdll.LoadLibrary('amd/build/libAMDWrapper.so')
 libscotch = ctypes.cdll.LoadLibrary('scotch/build/libSCOTCHWrapper.so')
 
-# Full valuation of the DRL model
+# Full evaluation of the DRL model
 
 
 def ac_eval_coarse_full(ac, graph, k):
@@ -686,7 +685,13 @@ if __name__ == "__main__":
 
         # Compute the number of non-zero (nnz) in elements in the LU
         # factorization with DRL
-        p = drl_nested_dissection(g, nmin_nd, hops, model, trials, lvl=0)
+        # Sometimes the METIS may fail in computing the vertex separator on the
+        # coarsest graph, producing an empty partition that affects the
+        # computations on the finer interpolation levels
+        try:
+            p = drl_nested_dissection(g, nmin_nd, hops, model, trials, lvl=0)
+        except ZeroDivisionError:
+            continue
         aperm = a[:, p][p, :]
         lu = splu(aperm, permc_spec='NATURAL')
         nnz_drl = lu.L.count_nonzero() + lu.U.count_nonzero()
