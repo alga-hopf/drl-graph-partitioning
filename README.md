@@ -72,14 +72,14 @@ Run ``drl_separator_train.py`` with the following arguments
 - ``ntrain``: number of training graphs (default: 10000)
 - ``epochs``: number of epochs (default: 1)
 - ``print_rew``: steps to take before printing the reward (default: 1000)
-- ``batch``: steps to take before updating the loss function (default:8)
-- ``hops``: number of hops (default:3)
+- ``batch``: steps to take before updating the loss function (default: 8)
+- ``hops``: number of hops (default: 3)
 - ``workers``: number of workers (default: 8)
 - ``lr``: learning rate (default: 0.001)
 - ``gamma``: discount factor (default: 0.9)
 - ``coeff``: critic loss coefficient (default: 0.1)
-- ``units``: number of units in the graph convolutional layers (default: 5)
-- ``dataset``: dataset type to choose between ``'delaunay'`` and ``'suitesparse'`` (default: ``'delaunay'``). With the first choice, random Delaunay graphs in the unit square are generated before the training. With the second choice, the user needs to download the matrices from the [SuiteSparse matrix collection](https://sparse.tamu.edu/) in the Matrix Market format and put them in the folder ``drl-graph-partitioning/suitesparse_train``.
+- ``units``: number of units in the graph convolutional layers (default: 7)
+- ``dataset``: dataset type to choose between ``'delaunay'`` and ``'suitesparse'`` (default: ``'delaunay'``). With the first choice, random Delaunay graphs in the unit square are generated before the training. With the second choice, the user needs to download the matrices from the [SuiteSparse matrix collection](https://sparse.tamu.edu/) in the Matrix Market format and put the ``.mtx`` files in the folder ``drl-graph-partitioning/suitesparse_train``.
 
 After the training the weights are saved in ``out`` with the name ``model_separator_delaunay``. 
 
@@ -90,9 +90,9 @@ Run ``drl_separator_test.py`` with the following arguments
 - ``nmax``: maximum graph size (default: 10000)
 - ``ntest``: number of testing graphs (default: 1000)
 - ``hops``: : number of hops (default:3)
-- ``units``: number of units in the graph convolutional layers in the loaded refining DNN (default: 5)
+- ``units``: number of units in the graph convolutional layers in the loaded refining DNN (default: 7)
 - ``attempts``:  number of attempts to make (default: 3)
-- ``dataset``: dataset type to choose among ``'delaunay'``, ``'suitesparse'``, and the Finite Elements triangulations ``graded_l``, ``hole3``, ``hole6`` (default: ``'delaunay'``). With the first choice, random Delaunay graphs in the unit square are generated before the evaluation. With the second choice, the user needs to download the matrices from the [SuiteSparse matrix collection](https://sparse.tamu.edu/) in the Matrix Market format and put them in the folder ``drl-graph-partitioning/suitesparse``. For the Finite Elements triangulations, the user can download the matrices from [here](https://portal.nersc.gov/project/sparse/strumpack/fe_triangulations.tar.xz) and put the 3 folders in ``drl-graph-partitioning/``.
+- ``dataset``: dataset type to choose among ``'delaunay'``, ``'suitesparse'``, and the Finite Elements triangulations ``graded_l``, ``hole3``, ``hole6`` (default: ``'delaunay'``). With the first choice, random Delaunay graphs in the unit square are generated before the evaluation. With the second choice, the user needs to download the matrices from the [SuiteSparse matrix collection](https://sparse.tamu.edu/) in the Matrix Market format and put the ``.mtx`` files in the folder ``drl-graph-partitioning/suitesparse``. For the Finite Elements triangulations, the user can download the matrices from [here](https://portal.nersc.gov/project/sparse/strumpack/fe_triangulations.tar.xz) and put the 3 folders in ``drl-graph-partitioning/``.
 
 For each graph in the dataset the normalized separator computed with DRL and METIS is returned.
 
@@ -102,10 +102,10 @@ Run ``drl_nd_testing.py`` with the following arguments
 - ``nmin``: minimum graph size (default: 100)
 - ``nmax``: maximum graph size (default: 10000)
 - ``ntest``: number of testing graphs (default: 1000)
-- ``hops``: : number of hops (default:3)
-- ``units``: number of units in the graph convolutional layers in the loaded refining DNN (default: 5)
+- ``hops``: : number of hops (default: 3)
+- ``units``: number of units in the graph convolutional layers in the loaded refining DNN (default: 7)
 - ``attempts``: number of attempts to make (default: 3)
-- ``dataset``: dataset type to choose among ``'delaunay'``, ``'suitesparse'``, and the Finite Elements triangulations ``graded_l``, ``hole3``, ``hole6`` (default: ``'delaunay'``). With the first choice, random Delaunay graphs in the unit square are generated before the evaluation. With the second choice, the user needs to download the matrices from the [SuiteSparse matrix collection](https://sparse.tamu.edu/) in the Matrix Market format and put them in the folder ``drl-graph-partitioning/suitesparse``. For the Finite Elements triangulations, the user can download the matrices from [here](https://portal.nersc.gov/project/sparse/strumpack/fe_triangulations.tar.xz) and put the 3 folders in ``drl-graph-partitioning/``.
+- ``dataset``: dataset type to choose among ``'delaunay'``, ``'suitesparse'``, and the Finite Elements triangulations ``graded_l``, ``hole3``, ``hole6`` (default: ``'delaunay'``). With the first choice, random Delaunay graphs in the unit square are generated before the evaluation. With the second choice, the user needs to download the matrices from the [SuiteSparse matrix collection](https://sparse.tamu.edu/) in the Matrix Market format and put the ``.mtx`` files in the folder ``drl-graph-partitioning/suitesparse``. For the Finite Elements triangulations, the user can download the matrices from [here](https://portal.nersc.gov/project/sparse/strumpack/fe_triangulations.tar.xz) and put the 3 folders in ``drl-graph-partitioning/``.
 
 For each graph in the dataset it is returned the number of non-zero entries in the LU factorization of the associated adjacency matrix computed with DRL, METIS_ND, COLAMD, METIS, SCOTCH.
 
