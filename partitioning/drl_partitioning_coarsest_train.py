@@ -160,7 +160,7 @@ def training_loop(
 
         start = graph
 
-        len_episode = math.ceil(start.num_nodes / 2 - 1)  # length of an episod
+        len_episode = math.ceil(start.num_nodes / 2 - 1)  # length of an episode
 
         # this is the array that keeps track of vertices that have been flipped
         # yet
@@ -171,7 +171,7 @@ def training_loop(
 
         rews, vals, logprobs = [], [], []
 
-        # Here starts the episod related to the graph "start"
+        # Here starts the episode related to the graph "start"
         while time < len_episode:
 
             # we evaluate the A2C agent on the graph
@@ -184,7 +184,7 @@ def training_loop(
 
             rew = reward_nc(start, action)
 
-            # Collect all the rewards in this episod
+            # Collect all the rewards in this episode
             rew_partial += rew
 
             # Collect the log-probability of the chosen action
@@ -202,7 +202,7 @@ def training_loop(
 
             time += 1
 
-        # After time_to_sample episods we update the loss
+        # After time_to_sample episodes we update the loss
         if i % time_to_sample == 0:  # and i > 0:
 
             logprobs = torch.stack(logprobs).flip(dims=(0,)).view(-1)

@@ -343,14 +343,14 @@ def training_loop(
 
             data = k_hop_graph_cut(start_all, hops)
             graph_cut, positions = data[0], data[1]
-            len_episod = 2 * separator(start_all)
+            len_episode = 2 * separator(start_all)
             start = graph_cut
             time = 0
 
             rews, vals, logprobs = [], [], []
 
-            # Here starts the episod related to the graph "start"
-            while time < len_episod:
+            # Here starts the episode related to the graph "start"
+            while time < len_episode:
 
                 # we evaluate the A2C agent on the graph
                 policy, values = model(start)
@@ -359,7 +359,7 @@ def training_loop(
                     logits=probs).sample().detach().item()
                 # compute the reward associated with this action
                 rew = reward_separator(start_all, positions[action].item())
-                # Collect all the rewards in this episod
+                # Collect all the rewards in this episode
                 rew_partial += rew
 
                 # Collect the log-probability of the chosen action
@@ -393,7 +393,7 @@ def training_loop(
                 time += 1
 
             # After time_to_sample episods we update the loss
-                if i % time_to_sample == 0 or time == len_episod:
+                if i % time_to_sample == 0 or time == len_episode:
 
                     logprobs = torch.stack(logprobs).flip(dims=(0,)).view(-1)
                     vals = torch.stack(vals).flip(dims=(0,)).view(-1)

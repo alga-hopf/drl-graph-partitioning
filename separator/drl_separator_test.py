@@ -564,7 +564,7 @@ if __name__ == "__main__":
         # Normalized separator with METIS
         a, b, c = nxmetis.vertex_separator(to_networkx(g, to_undirected=True))
 
-        # Sometimes the METIS may fail in computing the vertex separator on the
+        # Sometimes METIS may fail in computing the vertex separator on the
         # coarsest graph, producing an empty partition that affects the
         # computations on the finer interpolation levels
         if 0 in [A, B, len(b), len(c)]:

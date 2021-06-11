@@ -685,7 +685,7 @@ if __name__ == "__main__":
 
         # Compute the number of non-zero (nnz) in elements in the LU
         # factorization with DRL
-        # Sometimes the METIS may fail in computing the vertex separator on the
+        # Sometimes METIS may fail in computing the vertex separator on the
         # coarsest graph, producing an empty partition that affects the
         # computations on the finer interpolation levels
         try:
