@@ -38,7 +38,7 @@ Run ``drl_partitioning_train.py`` with the following arguments
 - ``gamma``: discount factor (default: 0.9)
 - ``coeff``: critic loss coefficient (default: 0.1)
 - ``units``: number of units in the graph convolutional layers (default: 5)
-- ``dataset``: dataset type to choose between ``'delaunay'`` and ``'suitesparse'`` (default: ``'delaunay'``). With the first choice, random Delaunay graphs in the unit square are generated before the training. With the second choice, the user needs to download the matrices from the [SuiteSparse matrix collection](https://sparse.tamu.edu/) in the Matrix Market format and put the ``.mtx`` files in the folder ``drl-graph-partitioning/suitesparse_train``.
+- ``dataset``: dataset type to choose between ``'delaunay'`` and ``'suitesparse'`` (default: ``'delaunay'``). With the first choice, random Delaunay graphs in the unit square are generated before the training. With the second choice, the user needs to download the matrices from the [SuiteSparse matrix collection](https://sparse.tamu.edu/) in the Matrix Market format and put the ``.mtx`` files in the folder ``drl-graph-partitioning/suitesparse_train``. In the paper we focused on matrices coming from 2D/3D discretizations.
 
 After the training the weights are saved in ``out`` with the name ``model_partitioning_delaunay``. 
 
@@ -79,7 +79,7 @@ Run ``drl_separator_train.py`` with the following arguments
 - ``gamma``: discount factor (default: 0.9)
 - ``coeff``: critic loss coefficient (default: 0.1)
 - ``units``: number of units in the graph convolutional layers (default: 7)
-- ``dataset``: dataset type to choose between ``'delaunay'`` and ``'suitesparse'`` (default: ``'delaunay'``). With the first choice, random Delaunay graphs in the unit square are generated before the training. With the second choice, the user needs to download the matrices from the [SuiteSparse matrix collection](https://sparse.tamu.edu/) in the Matrix Market format and put the ``.mtx`` files in the folder ``drl-graph-partitioning/suitesparse_train``.
+- ``dataset``: dataset type to choose between ``'delaunay'`` and ``'suitesparse'`` (default: ``'delaunay'``). With the first choice, random Delaunay graphs in the unit square are generated before the training. With the second choice, the user needs to download the matrices from the [SuiteSparse matrix collection](https://sparse.tamu.edu/) in the Matrix Market format and put the ``.mtx`` files in the folder ``drl-graph-partitioning/suitesparse_train``. In the paper we focused on matrices coming from 2D/3D discretizations.
 
 After the training the weights are saved in ``out`` with the name ``model_separator_delaunay``. 
 
