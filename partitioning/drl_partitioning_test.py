@@ -48,25 +48,44 @@ def graph_delaunay_from_points(points):
 def random_delaunay_graph(n):
     points = np.random.random_sample((n, 2))
     g = graph_delaunay_from_points(points)
-    return torch_from_graph(g)
-
-# Build a pytorch geometric graph with features [1,0] form a networkx graph
-
-
-def torch_from_graph(graph):
-    adj_sparse = nx.to_scipy_sparse_matrix(graph, format='coo')
+    
+    adj_sparse = nx.to_scipy_sparse_matrix(g, format='coo')
     row = adj_sparse.row
     col = adj_sparse.col
 
-    features = []
-    for i in range(graph.number_of_nodes()):
-        features.append([1., 0.])
+    one_hot = []
+    for i in range(g.number_of_nodes()):
+        one_hot.append([1., 0.])
 
     edges = torch.tensor([row, col], dtype=torch.long)
-    nodes = torch.tensor(np.array(features), dtype=torch.float)
+    nodes = torch.tensor(np.array(one_hot), dtype=torch.float)
+    graph_torch = Data(x=nodes, edge_index=edges)
+    
+    return graph_torch
+
+# Build a pytorch geometric graph with features [1,0] form a networkx graph
+    
+def torch_from_graph(g):
+
+    adj_sparse = nx.to_scipy_sparse_matrix(g, format='coo')
+    row = adj_sparse.row
+    col = adj_sparse.col
+
+    one_hot = []
+    for i in range(g.number_of_nodes()):
+        one_hot.append([1., 0.])
+
+    edges = torch.tensor([row, col], dtype=torch.long)
+    nodes = torch.tensor(np.array(one_hot), dtype=torch.float)
     graph_torch = Data(x=nodes, edge_index=edges)
 
+    degs = np.sum(adj_sparse.todense(), axis=0)
+    first_vertices = np.where(degs == np.min(degs))[0]
+    first_vertex = np.random.choice(first_vertices)
+    change_vertex(graph_torch, first_vertex)
+
     return graph_torch
+    
 
 # Build a pytorch geometric graph with features [1,0] form a sparse matrix
 
