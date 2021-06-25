@@ -547,7 +547,6 @@ if __name__ == "__main__":
                 if nx.number_connected_components(gnx) == 1 and gnx.number_of_nodes(
                 ) > n_min and gnx.number_of_nodes() < n_max:
                     g = torch_from_sparse(matrix_sparse)
-                    g.weight = torch.tensor([1] * g.num_edges)
                     g.batch = torch.zeros(g.num_nodes)
                     i += 1
                 else:
