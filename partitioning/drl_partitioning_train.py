@@ -7,7 +7,6 @@ import nxmetis
 
 import torch
 import torch.nn as nn
-import torch.multiprocessing as mp
 
 from torch_geometric.data import Data, DataLoader, Batch
 from torch_geometric.nn import SAGEConv, graclus, avg_pool, global_mean_pool
@@ -278,7 +277,6 @@ def volumes(graph):
 
 # Training loop
 def training_loop(
-        t,
         model,
         training_dataset,
         episodes,
@@ -289,302 +287,288 @@ def training_loop(
         print_loss,
         k):
 
-    # Here start the main loop for training
-    for i in range(episodes):
-        rew_partial = 0
-        p = 0
-        for graph in training_dataset:
-            start_all = partition_metis_refine(graph)
+	# Here start the main loop for training
+	for i in range(episodes):
+		rew_partial = 0
+		p = 0
+		print('Episode:',i)
+		print('')
+		for graph in training_dataset:
+			print('Graph:',p,'  Number of nodes:',graph.num_nodes)
+			start_all = partition_metis_refine(graph)
 
-            data = k_hop_graph_cut(start_all, k)
-            graph_cut, positions = data[0], data[1]
-            len_episode = cut(graph)
+			data = k_hop_graph_cut(start_all, k)
+			graph_cut, positions = data[0], data[1]
+			len_episode = cut(graph)
 
-            start = graph_cut
-            time = 0
+			start = graph_cut
+			time = 0
 
-            rews, vals, logprobs = [], [], []
+			rews, vals, logprobs = [], [], []
+			# Here starts the episod related to the graph "start"
+			while time < len_episode:
+				# we evaluate the A2C agent on the graph
+				policy, values = model(start)
+				probs = policy.view(-1)
 
-            # Here starts the episod related to the graph "start"
-            while time < len_episode:
+				action = torch.distributions.Categorical(
+					logits=probs).sample().detach().item()
 
-                # we evaluate the A2C agent on the graph
-                policy, values = model(start)
-                probs = policy.view(-1)
+				# compute the reward associated with this action
+				rew = reward_NC(start_all, positions[action])
+				rew_partial += rew
+				# Collect the log-probability of the chosen action
+				logprobs.append(policy.view(-1)[action])
+				# Collect the value of the chosen action
+				vals.append(values)
+				# Collect the reward
+				rews.append(rew)
 
-                action = torch.distributions.Categorical(
-                    logits=probs).sample().detach().item()
+				new_state = start.clone()
+				new_state_orig = start_all.clone()
+				# we flip the vertex returned by the policy
+				new_state = change_vertex(new_state, action)
+				new_state_orig = change_vertex(
+					new_state_orig, positions[action])
+				# Update the state
+				start = new_state
+				start_all = new_state_orig
 
-                # compute the reward associated with this action
-                rew = reward_NC(start_all, positions[action])
-                rew_partial += rew
-                # Collect the log-probability of the chosen action
-                logprobs.append(policy.view(-1)[action])
-                # Collect the value of the chosen action
-                vals.append(values)
-                # Collect the reward
-                rews.append(rew)
+				_, va, vb = volumes(start_all)
 
-                new_state = start.clone()
-                new_state_orig = start_all.clone()
-                # we flip the vertex returned by the policy
-                new_state = change_vertex(new_state, action)
-                new_state_orig = change_vertex(
-                    new_state_orig, positions[action])
-                # Update the state
-                start = new_state
-                start_all = new_state_orig
+				nnz = start_all.num_edges
+				start.x[:, 3] = torch.true_divide(va, nnz)
+				start.x[:, 4] = torch.true_divide(vb, nnz)
 
-                _, va, vb = volumes(start_all)
+				time += 1
 
-                nnz = start_all.num_edges
-                start.x[:, 3] = torch.true_divide(va, nnz)
-                start.x[:, 4] = torch.true_divide(vb, nnz)
+				# After time_to_sample episods we update the loss
+				if i % time_to_sample == 0 or time == len_episode:
 
-                time += 1
+					logprobs = torch.stack(logprobs).flip(dims=(0,)).view(-1)
+					vals = torch.stack(vals).flip(dims=(0,)).view(-1)
+					rews = torch.tensor(rews).flip(dims=(0,)).view(-1)
 
-                # After time_to_sample episods we update the loss
-                if i % time_to_sample == 0 or time == len_episode:
+					# Compute the advantage
+					R = []
+					R_partial = torch.tensor([0.])
+					for j in range(rews.shape[0]):
+						R_partial = rews[j] + gamma * R_partial
+						R.append(R_partial)
 
-                    logprobs = torch.stack(logprobs).flip(dims=(0,)).view(-1)
-                    vals = torch.stack(vals).flip(dims=(0,)).view(-1)
-                    rews = torch.tensor(rews).flip(dims=(0,)).view(-1)
+					R = torch.stack(R).view(-1)
+					advantage = R - vals.detach()
 
-                    # Compute the advantage
-                    R = []
-                    R_partial = torch.tensor([0.])
-                    for j in range(rews.shape[0]):
-                        R_partial = rews[j] + gamma * R_partial
-                        R.append(R_partial)
+					# Actor loss
+					actor_loss = (-1 * logprobs * advantage)
 
-                    R = torch.stack(R).view(-1)
-                    advantage = R - vals.detach()
+					# Critic loss
+					critic_loss = torch.pow(R - vals, 2)
 
-                    # Actor loss
-                    actor_loss = (-1 * logprobs * advantage)
+					# Finally we update the loss
+					optimizer.zero_grad()
 
-                    # Critic loss
-                    critic_loss = torch.pow(R - vals, 2)
+					loss = torch.mean(actor_loss) + \
+						torch.tensor(coeff) * torch.mean(critic_loss)
 
-                    # Finally we update the loss
-                    optimizer.zero_grad()
+					rews, vals, logprobs = [], [], []
 
-                    loss = torch.mean(actor_loss) + \
-                        torch.tensor(coeff) * torch.mean(critic_loss)
+					loss.backward()
 
-                    rews, vals, logprobs = [], [], []
-
-                    loss.backward()
-
-                    optimizer.step()
-            if p % print_loss == 0:
-                print('worker:', t, 'graph:', p,
-                      'reward:', rew_partial)
-            rew_partial = 0
-            p += 1
-    return model
+					optimizer.step()
+			if p % print_loss == 0:
+				print('graph:', p,'reward:', rew_partial)
+			rew_partial = 0
+			p += 1
+			
+	return model
 
 # Deep neural network that models the DRL agent
 
 
 class Model(torch.nn.Module):
-    def __init__(self, units):
-        super(Model, self).__init__()
+	def __init__(self, units):
+		super(Model, self).__init__()
 
-        self.units = units
-        self.common_layers = 1
-        self.critic_layers = 1
-        self.actor_layers = 1
-        self.activation = torch.tanh
+		self.units = units
+		self.common_layers = 1
+		self.critic_layers = 1
+		self.actor_layers = 1
+		self.activation = torch.tanh
 
-        self.conv_first = SAGEConv(5, self.units)
-        self.conv_common = nn.ModuleList(
-            [SAGEConv(self.units, self.units)
-             for i in range(self.common_layers)]
-        )
-        self.conv_actor = nn.ModuleList(
-            [SAGEConv(self.units,
-                      1 if i == self.actor_layers - 1 else self.units)
-             for i in range(self.actor_layers)]
-        )
-        self.conv_critic = nn.ModuleList(
-            [SAGEConv(self.units, self.units)
-             for i in range(self.critic_layers)]
-        )
-        self.final_critic = nn.Linear(self.units, 1)
+		self.conv_first = SAGEConv(5, self.units)
+		self.conv_common = nn.ModuleList(
+		    [SAGEConv(self.units, self.units)
+		     for i in range(self.common_layers)]
+		)
+		self.conv_actor = nn.ModuleList(
+		    [SAGEConv(self.units,
+		              1 if i == self.actor_layers - 1 else self.units)
+		     for i in range(self.actor_layers)]
+		)
+		self.conv_critic = nn.ModuleList(
+		    [SAGEConv(self.units, self.units)
+		     for i in range(self.critic_layers)]
+		)
+		self.final_critic = nn.Linear(self.units, 1)
 
-    def forward(self, graph):
-        x, edge_index, batch = graph.x, graph.edge_index, graph.batch
+	def forward(self, graph):
+		x, edge_index, batch = graph.x, graph.edge_index, graph.batch
 
-        do_not_flip = torch.where(x[:, 2] != 0.)
+		do_not_flip = torch.where(x[:, 2] != 0.)
+		x = self.activation(self.conv_first(x, edge_index))
+		for i in range(self.common_layers):
+		    x = self.activation(self.conv_common[i](x, edge_index))
 
-        x = self.activation(self.conv_first(x, edge_index))
-        for i in range(self.common_layers):
-            x = self.activation(self.conv_common[i](x, edge_index))
+		x_actor = x
+		for i in range(self.actor_layers):
+		    x_actor = self.conv_actor[i](x_actor, edge_index)
+		    if i < self.actor_layers - 1:
+		        x_actor = self.activation(x_actor)
+		x_actor[do_not_flip] = torch.tensor(-np.Inf)
+		x_actor = torch.log_softmax(x_actor, dim=0)
+		
 
-        x_actor = x
-        for i in range(self.actor_layers):
-            x_actor = self.conv_actor[i](x_actor, edge_index)
-            if i < self.actor_layers - 1:
-                x_actor = self.activation(x_actor)
-        x_actor[do_not_flip] = torch.tensor(-np.Inf)
-        x_actor = torch.log_softmax(x_actor, dim=0)
+		if not self.training:
+		    return x_actor
 
-        if not self.training:
-            return x_actor
-
-        x_critic = x.detach()
-        for i in range(self.critic_layers):
-            x_critic = self.conv_critic[i](x_critic, edge_index)
-            if i < self.critic_layers - 1:
-                x_critic = self.activation(x_critic)
-        x_critic = self.final_critic(x_critic)
-        x_critic = torch.tanh(global_mean_pool(x_critic, batch))
-        return x_actor, x_critic
-
-    def forward_c(self, graph, gcsr):
-        n = gcsr.shape[0]
-        x_actor = torch.zeros([n, 1], dtype=torch.float32)
-        libcdrl.forward(
-            ctypes.c_int(n),
-            ctypes.c_void_p(gcsr.indptr.ctypes.data),
-            ctypes.c_void_p(gcsr.indices.ctypes.data),
-            ctypes.c_void_p(graph.x.data_ptr()),
-            ctypes.c_void_p(x_actor.data_ptr()),
-            ctypes.c_void_p(self.conv_first.lin_l.weight.data_ptr()),
-            ctypes.c_void_p(self.conv_first.lin_r.weight.data_ptr()),
-            ctypes.c_void_p(self.conv_common[0].lin_l.weight.data_ptr()),
-            ctypes.c_void_p(self.conv_common[0].lin_r.weight.data_ptr()),
-            ctypes.c_void_p(self.conv_actor[0].lin_l.weight.data_ptr()),
-            ctypes.c_void_p(self.conv_actor[0].lin_r.weight.data_ptr())
-        )
-        return x_actor
+		x_critic = x.detach()
+		for i in range(self.critic_layers):
+		    x_critic = self.conv_critic[i](x_critic, edge_index)
+		    if i < self.critic_layers - 1:
+		        x_critic = self.activation(x_critic)
+		x_critic = self.final_critic(x_critic)
+		x_critic = torch.tanh(global_mean_pool(x_critic, batch))
+		return x_actor, x_critic
+	'''
+	def forward_c(self, graph, gcsr):
+		n = gcsr.shape[0]
+		x_actor = torch.zeros([n, 1], dtype=torch.float32)
+		libcdrl.forward(
+		    ctypes.c_int(n),
+		    ctypes.c_void_p(gcsr.indptr.ctypes.data),
+		    ctypes.c_void_p(gcsr.indices.ctypes.data),
+		    ctypes.c_void_p(graph.x.data_ptr()),
+		    ctypes.c_void_p(x_actor.data_ptr()),
+		    ctypes.c_void_p(self.conv_first.lin_l.weight.data_ptr()),
+		    ctypes.c_void_p(self.conv_first.lin_r.weight.data_ptr()),
+		    ctypes.c_void_p(self.conv_common[0].lin_l.weight.data_ptr()),
+		    ctypes.c_void_p(self.conv_common[0].lin_r.weight.data_ptr()),
+		    ctypes.c_void_p(self.conv_actor[0].lin_l.weight.data_ptr()),
+		    ctypes.c_void_p(self.conv_actor[0].lin_r.weight.data_ptr())
+		)
+		
+		return x_actor
+	'''
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--out', default='./temp_edge/', type=str)
-    parser.add_argument(
-        "--nmin",
-        default=200,
-        help="Minimum graph size",
-        type=int)
-    parser.add_argument(
-        "--nmax",
-        default=5000,
-        help="Maximum graph size",
-        type=int)
-    parser.add_argument(
-        "--ntrain",
-        default=10000,
-        help="Number of training graphs",
-        type=int)
-    parser.add_argument(
-        "--epochs",
-        default=1,
-        help="Number of training epochs",
-        type=int)
-    parser.add_argument(
-        "--print_rew",
-        default=1000,
-        help="Steps to take before printing the reward",
-        type=int)
-    parser.add_argument("--batch", default=8, help="Batch size", type=int)
-    parser.add_argument("--hops", default=3, help="Number of hops", type=int)
-    parser.add_argument(
-        "--workers",
-        default=8,
-        help="Number of workers",
-        type=int)
-    parser.add_argument(
-        "--lr",
-        default=0.001,
-        help="Learning rate",
-        type=float)
-    parser.add_argument(
-        "--gamma",
-        default=0.9,
-        help="Gamma, discount factor",
-        type=float)
-    parser.add_argument(
-        "--coeff",
-        default=0.1,
-        help="Critic loss coefficient",
-        type=float)
-    parser.add_argument(
-        "--units",
-        default=5,
-        help="Number of units in conv layers",
-        type=int)
-    parser.add_argument(
-        "--dataset",
-        default='delaunay',
-        help="Dataset type: delaunay or suitesparse",
-        type=str)
+	parser = argparse.ArgumentParser(
+		formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+	parser.add_argument('--out', default='./temp_edge/', type=str)
+	parser.add_argument(
+		"--nmin",
+		default=200,
+		help="Minimum graph size",
+		type=int)
+	parser.add_argument(
+		"--nmax",
+		default=5000,
+		help="Maximum graph size",
+		type=int)
+	parser.add_argument(
+		"--ntrain",
+		default=10000,
+		help="Number of training graphs",
+		type=int)
+	parser.add_argument(
+		"--epochs",
+		default=1,
+		help="Number of training epochs",
+		type=int)
+	parser.add_argument(
+		"--print_rew",
+		default=1000,
+		help="Steps to take before printing the reward",
+		type=int)
+	parser.add_argument("--batch", default=8, help="Batch size", type=int)
+	parser.add_argument("--hops", default=3, help="Number of hops", type=int)
+	parser.add_argument(
+		"--lr",
+		default=0.001,
+		help="Learning rate",
+		type=float)
+	parser.add_argument(
+		"--gamma",
+		default=0.9,
+		help="Gamma, discount factor",
+		type=float)
+	parser.add_argument(
+		"--coeff",
+		default=0.1,
+		help="Critic loss coefficient",
+		type=float)
+	parser.add_argument(
+		"--units",
+		default=5,
+		help="Number of units in conv layers",
+		type=int)
+	parser.add_argument(
+		"--dataset",
+		default='delaunay',
+		help="Dataset type: delaunay or suitesparse",
+		type=str)
 
-    torch.manual_seed(1)
-    np.random.seed(2)
+	torch.manual_seed(1)
+	np.random.seed(2)
 
-    args = parser.parse_args()
-    outdir = args.out + '/'
-    Path(outdir).mkdir(parents=True, exist_ok=True)
+	args = parser.parse_args()
+	print(args)
+	outdir = args.out + '/'
+	Path(outdir).mkdir(parents=True, exist_ok=True)
 
-    n_min = args.nmin
-    n_max = args.nmax
-    n_train = args.ntrain
-    episodes = args.epochs
-    coeff = args.coeff
-    print_loss = args.print_rew
+	n_min = args.nmin
+	n_max = args.nmax
+	n_train = args.ntrain
+	episodes = args.epochs
+	coeff = args.coeff
+	print_loss = args.print_rew
 
-    time_to_sample = args.batch
-    hops = args.hops
-    n_workers = args.workers
-    lr = args.lr
-    gamma = args.gamma
-    units = args.units
-    dataset_type = args.dataset
+	time_to_sample = args.batch
+	hops = args.hops
+	lr = args.lr
+	gamma = args.gamma
+	units = args.units
+	dataset_type = args.dataset
 
-    # Choose the dataset type according to the parameter 'dataset_type'
-    if dataset_type == 'delaunay':
-        dataset = delaunay_dataset_with_coarser(n_train, n_min, n_max)
-    else:
-        dataset = suitesparse_dataset_with_coarser(n_train, n_min, n_max)
+	# Choose the dataset type according to the parameter 'dataset_type'
+	if dataset_type == 'delaunay':
+		dataset = delaunay_dataset_with_coarser(n_train, n_min, n_max)
+	else:
+		dataset = suitesparse_dataset_with_coarser(n_train, n_min, n_max)
 
-    model = Model(units)
-    model.share_memory()
-    print(model)
-    print('Model parameters:',
-          sum([w.nelement() for w in model.parameters()]))
+	model = Model(units)
+	#model.share_memory()
+	print(model)
+	print('Model parameters:',
+		  sum([w.nelement() for w in model.parameters()]))
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+	optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-    # Start training
-    print('Start training')
-    t0 = timeit.default_timer()
-    processes = []
-    for i in range(n_workers):
-        p = mp.Process(
-            target=training_loop,
-            args=(
-                i, model, dataset, episodes, gamma, time_to_sample, coeff,
-                optimizer, print_loss, hops
-            )
-        )
-        p.start()
-        processes.append(p)
-    for p in processes:
-        p.join()
-    for p in processes:
-        p.terminate()
-    ttrain = timeit.default_timer() - t0
-    print('Training took:', ttrain, 'seconds')
+	print('Start training')
+	
+	t0 = timeit.default_timer()
+	training_loop(model, dataset, episodes, gamma, time_to_sample, coeff, optimizer, print_loss, hops)
+	ttrain = timeit.default_timer() - t0
+	
+	print('Training took:', ttrain, 'seconds')
 
-    # Saving the model
-    if dataset_type == 'delaunay':
-        torch.save(model.state_dict(), outdir + 'model_partitioning_delaunay')
-    else:
-        torch.save(
-            model.state_dict(),
-            outdir +
-            'model_partitioning_suitesparse')
+	# Saving the model
+	if dataset_type == 'delaunay':
+		torch.save(model.state_dict(), outdir + 'model_partitioning_delaunay')
+	else:
+		torch.save(
+		    model.state_dict(),
+		    outdir +
+		    'model_partitioning_suitesparse')
+   
