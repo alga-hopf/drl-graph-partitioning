@@ -110,9 +110,11 @@ Run ``drl_nd_testing.py`` with the following arguments
 For each graph in the dataset it is returned the number of non-zero entries in the LU factorization of the associated adjacency matrix computed with DRL, METIS_ND, COLAMD, METIS, SCOTCH.
 
 ## Required software
-- Pytorch
-- Pytorch Geometric
-- NetworkX
-- Numpy
-- Scipy
-- NetworkX-METIS
+Most of the required software is in the ``requirements.txt`` file. [Networkx-METIS](https://networkx-metis.readthedocs.io/en/latest/index.html) can be installed as follows
+```
+git clone https://github.com/networkx/networkx-metis.git
+cd networkx-metis
+python setup.py build
+python setup.py install
+```
+See also the [installation page](https://networkx-metis.readthedocs.io/en/latest/install.html). You also need to build AMD and Scotch yourself.
