@@ -439,7 +439,6 @@ def drl_nested_dissection(graph, nmin, hops, model, trials, lvl=0):
 		idx = i_stack.pop()
 		if g.num_nodes < nmin:
 			if g.num_nodes > 0:
-				print("amd")
 				p = amd_ordering(g)
 				perm = [idx[i] for i in p] + perm
 		else:
