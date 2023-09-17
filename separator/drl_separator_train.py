@@ -79,7 +79,7 @@ def reward_separator(state, vertex):
 
 
 def torch_from_graph(graph):
-    adj_sparse = nx.to_scipy_sparse_matrix(graph, format='coo')
+    adj_sparse = nx.to_scipy_sparse_array(graph, format='coo')
     row = adj_sparse.row
     col = adj_sparse.col
 
@@ -321,7 +321,6 @@ def partition_metis_refine(graph):
 
 
 def training_loop(
-        t,
         model,
         training_dataset,
         episodes,
@@ -427,7 +426,7 @@ def training_loop(
 
                     optimizer.step()
             if p % print_loss == 0:
-                print('worker:', t, 'graph:', p,
+                print('graph:', p,
                       'reward:', rew_partial)
             rew_partial = 0
             p += 1
@@ -527,11 +526,6 @@ if __name__ == "__main__":
     parser.add_argument("--batch", default=8, help="Batch size", type=int)
     parser.add_argument("--hops", default=3, help="Number of hops", type=int)
     parser.add_argument(
-        "--workers",
-        default=8,
-        help="Number of workers",
-        type=int)
-    parser.add_argument(
         "--lr",
         default=0.001,
         help="Learning rate",
@@ -573,7 +567,6 @@ if __name__ == "__main__":
 
     time_to_sample = args.batch
     hops = args.hops
-    n_workers = args.workers
     lr = args.lr
     gamma = args.gamma
     units = args.units
@@ -596,21 +589,8 @@ if __name__ == "__main__":
     # Start the training
     print('Start training')
     t0 = timeit.default_timer()
-    processes = []
-    for i in range(n_workers):
-        p = mp.Process(
-            target=training_loop,
-            args=(
-                i, model, dataset, episodes, gamma, time_to_sample, coeff,
-                optimizer, print_loss, hops
-            )
-        )
-        p.start()
-        processes.append(p)
-    for p in processes:
-        p.join()
-    for p in processes:
-        p.terminate()
+    training_loop(model, dataset, episodes, gamma, time_to_sample, coeff,
+                optimizer, print_loss, hops)
     ttrain = timeit.default_timer() - t0
     print('Training took:', ttrain, 'seconds')
 

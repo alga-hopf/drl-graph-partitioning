@@ -209,7 +209,7 @@ def change_vertex(g, v, gnx, va, vb):
 
 
 def torch_from_graph(graph):
-    adj_sparse = nx.to_scipy_sparse_matrix(graph, format='coo')
+    adj_sparse = nx.to_scipy_sparse_array(graph, format='coo')
     row = adj_sparse.row
     col = adj_sparse.col
 

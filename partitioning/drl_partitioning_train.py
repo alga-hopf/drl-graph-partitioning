@@ -43,7 +43,7 @@ def random_delaunay_graph(n):
     points = np.random.random_sample((n, 2))
     g = graph_delaunay_from_points(points)
     
-    adj_sparse = nx.to_scipy_sparse_matrix(g, format='coo')
+    adj_sparse = nx.to_scipy_sparse_array(g, format='coo')
     row = adj_sparse.row
     col = adj_sparse.col
 
@@ -61,7 +61,7 @@ def random_delaunay_graph(n):
     
 def torch_from_graph(g):
 
-    adj_sparse = nx.to_scipy_sparse_matrix(g, format='coo')
+    adj_sparse = nx.to_scipy_sparse_array(g, format='coo')
     row = adj_sparse.row
     col = adj_sparse.col
 
@@ -217,7 +217,8 @@ def partition_metis_refine(graph):
             edge_index=graph.edge_index))
     coarse_graph_nx = to_networkx(coarse_graph, to_undirected=True)
     _, parts = nxmetis.partition(coarse_graph_nx, 2)
-    mparts = np.array(parts)
+    #print(parts)
+    #mparts = np.array(parts)
     coarse_graph.x[np.array(parts[0])] = torch.tensor([1., 0.])
     coarse_graph.x[np.array(parts[1])] = torch.tensor([0., 1.])
     _, inverse = torch.unique(cluster, sorted=True, return_inverse=True)

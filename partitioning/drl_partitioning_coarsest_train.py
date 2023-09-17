@@ -99,7 +99,7 @@ def graph_delaunay_from_points(points):
 
 def torch_from_graph(g):
 
-    adj_sparse = nx.to_scipy_sparse_matrix(g, format='coo')
+    adj_sparse = nx.to_scipy_sparse_array(g, format='coo')
     row = adj_sparse.row
     col = adj_sparse.col
 

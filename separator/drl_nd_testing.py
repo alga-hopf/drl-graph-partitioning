@@ -1,4 +1,4 @@
-
+	
 import argparse
 from pathlib import Path
 
@@ -214,7 +214,7 @@ def change_vertex(g, v, gnx, va, vb):
 
 
 def torch_from_graph(graph):
-    adj_sparse = nx.to_scipy_sparse_matrix(graph, format='coo')
+    adj_sparse = nx.to_scipy_sparse_array(graph, format='coo')
     row = adj_sparse.row
     col = adj_sparse.col
 
@@ -396,7 +396,7 @@ def partition_metis(coarse_graph, coarse_graph_nx):
 
 def scotch_ordering(g):
     gnx = to_networkx(g, to_undirected=True)
-    a = nx.to_scipy_sparse_matrix(gnx, format="csr", dtype=np.float32)
+    a = nx.to_scipy_sparse_array(gnx, format="csr", dtype=np.float32)
     n = g.num_nodes
     perm = np.zeros(n, dtype=np.int32)
     libscotch.WRAPPER_SCOTCH_graphOrder(
@@ -413,7 +413,7 @@ def scotch_ordering(g):
 def amd_ordering(g):
     gnx = to_networkx(g, to_undirected=True)
     n = g.num_nodes
-    a = nx.to_scipy_sparse_matrix(gnx, format="csr", dtype=np.float32)
+    a = nx.to_scipy_sparse_array(gnx, format="csr", dtype=np.float32)
     a += identity(n)
     perm = np.zeros(n, dtype=np.int32)
     iperm = np.zeros(n, dtype=np.int32)
@@ -430,43 +430,44 @@ def amd_ordering(g):
 
 
 def drl_nested_dissection(graph, nmin, hops, model, trials, lvl=0):
-    g_stack = [graph]
-    i_stack = [[i for i in range(graph.num_nodes)]]
-    perm = []
-    i = 0
-    while g_stack:
-        g = g_stack.pop()
-        idx = i_stack.pop()
-        if g.num_nodes < nmin:
-            if g.num_nodes > 0:
-                p = amd_ordering(g)
-                perm = [idx[i] for i in p] + perm
-        else:
-            g = ac_eval_coarse_full_trials(model, g, hops, trials)
-            ia = torch.where(g.x[:, 0] == 1.)[0].tolist()
-            ib = torch.where(g.x[:, 1] == 1.)[0].tolist()
-            isep = torch.where(g.x[:, 2] == 1.)[0].tolist()
-            ga_data = subgraph(
-                ia, g.edge_index, relabel_nodes=True, num_nodes=g.num_nodes
-            )[0]
-            gb_data = subgraph(
-                ib, g.edge_index, relabel_nodes=True, num_nodes=g.num_nodes
-            )[0]
-            ga = Batch(
-                batch=torch.zeros(len(ia), 1),
-                x=torch.zeros(len(ia), 3), edge_index=ga_data
-            )
-            gb = Batch(
-                batch=torch.zeros(len(ib), 1),
-                x=torch.zeros(len(ib), 3), edge_index=gb_data
-            )
-            g_stack.append(ga)
-            i_stack.append([idx[i] for i in ia])
-            g_stack.append(gb)
-            i_stack.append([idx[i] for i in ib])
-            perm = [idx[i] for i in isep] + perm
-        i += 1
-    return perm
+	g_stack = [graph]
+	i_stack = [[i for i in range(graph.num_nodes)]]
+	perm = []
+	i = 0
+	while g_stack:
+		g = g_stack.pop()
+		idx = i_stack.pop()
+		if g.num_nodes < nmin:
+			if g.num_nodes > 0:
+				print("amd")
+				p = amd_ordering(g)
+				perm = [idx[i] for i in p] + perm
+		else:
+		    g = ac_eval_coarse_full_trials(model, g, hops, trials)
+		    ia = torch.where(g.x[:, 0] == 1.)[0].tolist()
+		    ib = torch.where(g.x[:, 1] == 1.)[0].tolist()
+		    isep = torch.where(g.x[:, 2] == 1.)[0].tolist()
+		    ga_data = subgraph(
+		        ia, g.edge_index, relabel_nodes=True, num_nodes=g.num_nodes
+		    )[0]
+		    gb_data = subgraph(
+		        ib, g.edge_index, relabel_nodes=True, num_nodes=g.num_nodes
+		    )[0]
+		    ga = Batch(
+		        batch=torch.zeros(len(ia), 1),
+		        x=torch.zeros(len(ia), 3), edge_index=ga_data
+		    )
+		    gb = Batch(
+		        batch=torch.zeros(len(ib), 1),
+		        x=torch.zeros(len(ib), 3), edge_index=gb_data
+		    )
+		    g_stack.append(ga)
+		    i_stack.append([idx[i] for i in ia])
+		    g_stack.append(gb)
+		    i_stack.append([idx[i] for i in ib])
+		    perm = [idx[i] for i in isep] + perm
+		i += 1
+	return perm
 
 # Nested dissection ordering implemented with METIS
 
@@ -680,7 +681,7 @@ if __name__ == "__main__":
         print('Graph:', i, '  Vertices:', g.num_nodes, '  Edges:', g.num_edges)
 
         gnx = to_networkx(g, to_undirected=True)
-        a = nx.to_scipy_sparse_matrix(
+        a = nx.to_scipy_sparse_array(
             gnx, format='csc') + 10 * identity(g.num_nodes)
 
         # Compute the number of non-zero (nnz) in elements in the LU

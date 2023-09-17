@@ -49,7 +49,7 @@ def random_delaunay_graph(n):
     points = np.random.random_sample((n, 2))
     g = graph_delaunay_from_points(points)
     
-    adj_sparse = nx.to_scipy_sparse_matrix(g, format='coo')
+    adj_sparse = nx.to_scipy_sparse_array(g, format='coo')
     row = adj_sparse.row
     col = adj_sparse.col
 
@@ -67,7 +67,7 @@ def random_delaunay_graph(n):
     
 def torch_from_graph(g):
 
-    adj_sparse = nx.to_scipy_sparse_matrix(g, format='coo')
+    adj_sparse = nx.to_scipy_sparse_array(g, format='coo')
     row = adj_sparse.row
     col = adj_sparse.col
 
@@ -310,7 +310,7 @@ def ac_eval_coarse_full(ac, graph, k):
 
 def partition_metis(graph, graph_nx):
     obj, parts = nxmetis.partition(graph_nx, 2)
-    mparts = np.array(parts)
+    #mparts = np.array(parts)
     graph.x[parts[0]] = torch.tensor([1., 0.])
     graph.x[parts[1]] = torch.tensor([0., 1.])
 
@@ -423,7 +423,7 @@ def ac_eval(ac, graph, perc):
 
 def scotch_partition(g):
     gnx = to_networkx(g, to_undirected=True)
-    a = nx.to_scipy_sparse_matrix(gnx, format="csr", dtype=np.float32)
+    a = nx.to_scipy_sparse_array(gnx, format="csr", dtype=np.float32)
     n = g.num_nodes
     part = np.zeros(n, dtype=np.int32)
     libscotch.WRAPPER_SCOTCH_graphPart(
@@ -689,7 +689,7 @@ if __name__ == "__main__":
                         str(dataset_type) +
                         '/' +
                         str(graph)))
-                gnx = nx.from_scipy_sparse_matrix(matrix_sparse)
+                gnx = nx.from_scipy_sparse_array(matrix_sparse)
                 if nx.number_connected_components(gnx) == 1 and gnx.number_of_nodes(
                 ) > n_min and gnx.number_of_nodes() < n_max:
                     g = torch_from_sparse(matrix_sparse)
@@ -714,7 +714,7 @@ if __name__ == "__main__":
 
         # Partitioning with METIS
         cut_met, parts = nxmetis.partition(gnx, 2)
-        mparts = np.array(parts)
+        #mparts = np.array(parts)
         a_m = sum(gnx.degree(i) for i in parts[0])
         b_m = sum(gnx.degree(i) for i in parts[1])
 
