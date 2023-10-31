@@ -558,7 +558,6 @@ if __name__ == "__main__":
         # Normalized separator with DRL
         g1 = ac_eval_coarse_full_trials(model, g, hops, trials)
         A, B = volumes(g1)
-        print(A, B)
 
         # Normalized separator with METIS
         a, b, c = nxmetis.vertex_separator(to_networkx(g, to_undirected=True))

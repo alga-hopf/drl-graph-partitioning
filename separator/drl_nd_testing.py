@@ -692,12 +692,14 @@ if __name__ == "__main__":
             p = drl_nested_dissection(g, nmin_nd, hops, model, trials, lvl=0)
         except ZeroDivisionError:
             continue
+
         aperm = a[:, p][p, :]
         lu = splu(aperm, permc_spec='NATURAL')
         nnz_drl = lu.L.count_nonzero() + lu.U.count_nonzero()
 
         # Compute the number of non-zero (nnz) elements in the LU factorization
         # with nested dissection with METIS
+
         p = metis_nested_dissection(g, nmin_nd)
         aperm = a[:, p][p, :]
         lu = splu(aperm, permc_spec='NATURAL')
@@ -717,6 +719,7 @@ if __name__ == "__main__":
 
 # Compute the number of non-zero (nnz) elements in the LU factorization
 # with SCOTCH
+
         p = scotch_ordering(g)
         aperm = a[:, p][p, :]
         lu = splu(aperm, permc_spec='NATURAL')
