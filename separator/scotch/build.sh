@@ -1,7 +1,6 @@
 #!/bin/bash
 
-#export SCOTCH_DIR=$HOME/local/scotch_6.1.0
-export SCOTCH_DIR=$HOME/scotch-v7.0.4/src/libscotch/
+export SCOTCH_DIR=$HOME/scotch-v6.1.0/src/libscotch/
 
 rm -rf build
 mkdir build

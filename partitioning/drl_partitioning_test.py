@@ -423,7 +423,8 @@ def ac_eval(ac, graph, perc):
 
 def scotch_partition(g):
     gnx = to_networkx(g, to_undirected=True)
-    a = scipy.sparse.csr_matrix(nx.to_scipy_sparse_array(gnx, format="csr", dtype=np.float32))
+    a = nx.to_scipy_sparse_array(gnx, format="coo", dtype=np.int32)
+    a = scipy.sparse.csr_matrix((a.data, (a.row, a.col)), dtype=np.int32)
     n = g.num_nodes
     part = np.zeros(n, dtype=np.int32)
     libscotch.WRAPPER_SCOTCH_graphPart(

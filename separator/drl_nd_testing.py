@@ -396,7 +396,8 @@ def partition_metis(coarse_graph, coarse_graph_nx):
 
 def scotch_ordering(g):
     gnx = to_networkx(g, to_undirected=True)
-    a = nx.to_scipy_sparse_array(gnx, format="csr", dtype=np.float32)
+    a = nx.to_scipy_sparse_array(gnx, format="coo", dtype=np.int32)
+    a = scipy.sparse.csr_matrix((a.data, (a.row, a.col)), dtype=np.int32)
     n = g.num_nodes
     perm = np.zeros(n, dtype=np.int32)
     libscotch.WRAPPER_SCOTCH_graphOrder(
@@ -413,8 +414,9 @@ def scotch_ordering(g):
 def amd_ordering(g):
     gnx = to_networkx(g, to_undirected=True)
     n = g.num_nodes
-    a = nx.to_scipy_sparse_array(gnx, format="csr", dtype=np.float32)
-    a += identity(n)
+    a = nx.to_scipy_sparse_array(gnx, format="coo", dtype=np.int32)
+    a = scipy.sparse.csr_matrix((a.data, (a.row, a.col)), dtype=np.int32)
+    a += identity(n, dtype=np.int32)
     perm = np.zeros(n, dtype=np.int32)
     iperm = np.zeros(n, dtype=np.int32)
     libamd.WRAPPER_amd(
@@ -682,7 +684,7 @@ if __name__ == "__main__":
         gnx = to_networkx(g, to_undirected=True)
         a = nx.to_scipy_sparse_array(
             gnx, format='csc') + 10 * identity(g.num_nodes)
-
+        a = scipy.sparse.csc_matrix(a, dtype=np.int32)
         # Compute the number of non-zero (nnz) in elements in the LU
         # factorization with DRL
         # Sometimes METIS may fail in computing the vertex separator on the
@@ -693,7 +695,8 @@ if __name__ == "__main__":
         except ZeroDivisionError:
             continue
 
-        aperm = a[:, p][p, :]
+        
+        aperm = scipy.sparse.csr_matrix(a[:, p][p, :], dtype=np.int32)	
         lu = splu(aperm, permc_spec='NATURAL')
         nnz_drl = lu.L.count_nonzero() + lu.U.count_nonzero()
 
@@ -719,7 +722,6 @@ if __name__ == "__main__":
 
 # Compute the number of non-zero (nnz) elements in the LU factorization
 # with SCOTCH
-
         p = scotch_ordering(g)
         aperm = a[:, p][p, :]
         lu = splu(aperm, permc_spec='NATURAL')
