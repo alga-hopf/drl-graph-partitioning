@@ -118,3 +118,23 @@ python setup.py build
 python setup.py install
 ```
 See also the [installation page](https://networkx-metis.readthedocs.io/en/latest/install.html). You also need to build AMD and Scotch yourself.
+
+### Scotch
+The following steps assume you are using Linux.
+
+To install Scotch, first download Scotch from [here](https://gitlab.inria.fr/scotch/scotch/-/releases/v6.1.0) and extract it in your home directory. Then go to ``scotch-v6.1.0/src/Make.inc`` and copy the file ``Makefile.inc.x86-64_pc_linux2`` into the ``src`` directory and rename it as ``Makefile.inc``. Open the file and add ``-DINTSIZE32`` to ``CFLAGS``. Open a terminal, go to ``~/scotch-v6.1.0/src`` and type ``make``. This will compile Scotch.
+
+Once you have done this, in a terminal type
+```
+cd ~/drl-graph-partitioning/partitioning/scotch
+bash build.sh
+```
+This will compile the Scotch wrapper. Do the same for the Scotch wrapper in the ``separator`` folder.
+
+### AMD
+Opena a terminal and write
+```
+cd ~/drl-graph-partitioning/separator/amd
+bash build.sh
+```
+This will compile the AMD wrapper.
